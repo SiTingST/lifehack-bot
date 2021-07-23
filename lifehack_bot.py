@@ -55,29 +55,6 @@ def error(update, context):
     logger.warning('Update "%s" caused error "%s"', update, context.error)
 
 
-def start(update, context):
-    startMessage = "Click NEW to get started!\n\n"
-    startMessage += "Need help? 🆘\nClick /help to see all available commands and what they do.\n"
-    update.message.reply_text(startMessage, reply_markup=markup)
-    try:
-        connection = connect_db()
-        cursor = connection.cursor()
-        postgres_insert_query = """INSERT INTO users (user_id, users_questions, test_done) VALUES (%s, %s, False) """
-        user_to_insert = (getID(update), [],)
-        cursor.execute(postgres_insert_query, user_to_insert)
-        connection.commit()
-        count = cursor.rowcount
-        print (count, "user inserted successfully into users table")
-    except (Exception, psycopg2.Error):# as error :
-        if (connection):
-            # print("Failed to insert user into users table: ", error)
-            print("User already registered")
-    finally:
-        if (connection):
-            cursor.close()
-            connection.close()
-            # print("PostgreSQL connection is closed")
-
 def getID(update):
     return(update.message.chat.id)
 
@@ -94,8 +71,28 @@ def main():
     # log all errors
     dp.add_error_handler(error)
 
-    start()
-
+    startMessage = "Click NEW to get started!\n\n"
+    startMessage += "Need help? 🆘\nClick /help to see all available commands and what they do.\n"
+    update.message.reply_text(startMessage, reply_markup=markup)
+    try:
+        connection = connect_db()
+        cursor = connection.cursor()
+        postgres_insert_query = """INSERT INTO users (user_id, users_questions, test_done) VALUES (%s, %s, False) """
+        user_to_insert = (getID(update), [],)
+        cursor.execute(postgres_insert_query, user_to_insert)
+        connection.commit()
+        count = cursor.rowcount
+        print(count, "user inserted successfully into users table")
+    except (Exception, psycopg2.Error):  # as error :
+        if (connection):
+            # print("Failed to insert user into users table: ", error)
+            print("User already registered")
+    finally:
+        if (connection):
+            cursor.close()
+            connection.close()
+            # print("PostgreSQL connection is closed")
+            
     # Start the Bot
     updater.start_webhook(listen="0.0.0.0",
                           port=int(PORT),
