@@ -113,7 +113,7 @@ def create_questions(update, context):
                 connection = database_connection()
                 cursor = connection.cursor()
                 questions_data = (
-                    context.chat_data["questions"], context.chat_data["answer"], context.chat_data["deck_token"])
+                    context.chat_data["question"], context.chat_data["answer"], context.chat_data["deck_token"])
                 insert_query = """INSERT INTO questions (question, answer, deck_token) VALUES (%s, %s, %s) """
                 cursor.execute(insert_query, questions_data)
                 connection.commit()
@@ -131,7 +131,7 @@ def create_questions(update, context):
 
 def create_answers(update, context):
     user_input = update.message.text
-    context.chat_data["questions"] = user_input
+    context.chat_data["question"] = user_input
     update.message.reply_text("Please enter your answers.")
     if user_input == "/submit":
         update.message.reply_text("Submitted!")
@@ -158,7 +158,7 @@ def check_if_token_is_valid(given_deck_token):
 
 def play_deck_message(update, context):
     update.message.reply_text("Enter deck token to play!. \n\nTo cancel, type /cancel.")
-    context.chat_data["counter"] = 0
+    context.chat_data["counter"] = 0 # initialize counter
 
     return PLAY_DECK
 
@@ -179,6 +179,7 @@ def select_questions_and_answer_from_deck(deck_token):
 
 def play_deck(update, context):
     deck_token = update.message.text
+    context.chat_data["curr_deck_token"] = deck_token
     if deck_token == "/cancel":
         cancel(update, context)
         return CHOOSING
@@ -191,13 +192,11 @@ def play_deck(update, context):
             context.chat_data["num_of_qn"] = len(context.chat_data["questions_and_ans"])
 
             # first question
-            context.chat_data["questions"] = questions_and_answer[context.chat_data["counter"]][0]
-
+            context.chat_data["question"] = questions_and_answer[context.chat_data["counter"]][0]
             # first answer
             context.chat_data["answer"] = questions_and_answer[context.chat_data["counter"]][1]
-            context.chat_data["counter"] = context.chat_data["counter"] + 1
 
-        update.message.reply_text(context.chat_data["questions"])
+        update.message.reply_text(context.chat_data["question"])
 
         update.message.reply_text("Please enter your answer.")
         return WAITING_FOR_USER_ANS
@@ -206,24 +205,32 @@ def play_deck(update, context):
 def give_user_question(update, context):
     if context.chat_data["counter"] == context.chat_data["num_of_qn"]:
         update.message.reply_text("That was the end of the quiz!")
+        return CHOOSING
     else:
-        update.message.reply_text(context.chat_data["questions"])
+        deck_token = context.chat_data["curr_deck_token"]
+        questions_and_answer = select_questions_and_answer_from_deck(deck_token)
+        context.chat_data["question"] = questions_and_answer[context.chat_data["counter"]][0]
+        context.chat_data["answer"] = questions_and_answer[context.chat_data["counter"]][1]
+        update.message.reply_text(context.chat_data["question"])
         update.message.reply_text("Please enter your answer.")
 
     return WAITING_FOR_USER_ANS
 
-
+# called upon WAITING_FOR_USER_ANS state
 def validate_user_answer(update, context):
     user_answer = update.message.text
     if user_answer == context.chat_data["answer"]:
         update.message.reply_text("Good Job! That's the correct answer!! To cancel, type /cancel.")
     else:
         update.message.reply_text("Good Try! But the correct answer is " + context.chat_data["answer"] +
-                                  "  To cancel, type /cancel.")
-    reply_keyboard = [['Yes', 'No']]
-    update.message.reply_text("Proceed to add questions to your new deck?",
-                              reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-    return GIVE_USER_QUESTION
+                                  ".  To cancel, type /cancel.")
+    # reply_keyboard = [['Yes', 'No']]
+    # update.message.reply_text("Proceed to add questions to your new deck?",
+    #                           reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+    
+    context.chat_data["counter"] = context.chat_data["counter"] + 1 # Pull next question and answer
+    give_user_question(update, context)
+    # return GIVE_USER_QUESTION
 
 
 def view_all_decks_message(update, context):
@@ -272,6 +279,8 @@ def done(update, context):
     update.message.reply_text("Thanks for playing! Come back soon!")
     return ConversationHandler.END
 
+def dummy(update, context):
+    print("hello world")
 
 def main():
     updater = Updater(TOKEN, use_context=True)
@@ -296,7 +305,7 @@ def main():
             CREATE_QUESTIONS: [MessageHandler(Filters.text, create_questions)],
             CREATE_ANSWERS: [MessageHandler(Filters.text, create_answers)],
             WAITING_FOR_USER_ANS: [MessageHandler(Filters.text, validate_user_answer)],
-            GIVE_USER_QUESTION: [MessageHandler(Filters.text, play_deck)]
+            GIVE_USER_QUESTION: [MessageHandler(Filters.text, dummy)]
         },
         fallbacks=[CommandHandler('done', done)]
     )
