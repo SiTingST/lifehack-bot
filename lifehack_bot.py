@@ -1,5 +1,10 @@
 import logging
 import os
+<<<<<<< Updated upstream
+=======
+
+from telegram import ReplyKeyboardMarkup
+>>>>>>> Stashed changes
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
 
@@ -11,6 +16,17 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 TOKEN = '1908824393:AAE3SZKfsySMCu-PZQNqtuiy7Xm4GXKEHsM'
 
+<<<<<<< Updated upstream
+=======
+given_keyboard = [['CREATE Deck', 'VIEW deck 👀'],
+                  ['ADD Deck ➕', 'DELETE deck ⛔'],
+                  ['PRACTICE 💪', 'TEST ✍'],
+                  ['COMPETE']]
+
+markup = ReplyKeyboardMarkup(given_keyboard)
+
+
+>>>>>>> Stashed changes
 # Define a few command handlers. These usually take the two arguments update and
 # context. Error handlers also receive the raised TelegramError object in error.
 def start(update, context):
@@ -48,14 +64,20 @@ def main():
 
     # log all errors
     dp.add_error_handler(error)
+    updater.start_polling()
 
     # Start the Bot
-    updater.start_webhook(listen="0.0.0.0",
-                          port=int(PORT),
-                          url_path=TOKEN)
+   # updater.start_webhook(listen="0.0.0.0",
+    #                      port=int(PORT),
+    #                      url_path=TOKEN)
 
+    #updater.bot.setWebhook('https://lifehackbots.herokuapp.com/' + TOKEN)
+
+<<<<<<< Updated upstream
     updater.bot.setWebhook('https://lifehackbots.herokuapp.com/' + TOKEN)
 
+=======
+>>>>>>> Stashed changes
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
     # start_polling() is non-blocking and will stop the bot gracefully.
