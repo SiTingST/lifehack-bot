@@ -316,7 +316,7 @@ def error(update, context):
 
 
 def done(update, context):
-    update.message.reply_text("Thanks for playing! Come back soon!")
+    update.message.reply_text("Thanks for playing! Come back soon! To start the bot again, type /start")
     return ConversationHandler.END
 
 def leaderboards(update, context):
