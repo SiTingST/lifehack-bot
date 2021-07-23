@@ -1,8 +1,10 @@
 import logging
 import os
 from telegram import ReplyKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 
+CHOOSING, CREATE_DECK, PLAY_DECK, VIEW_ALL_DECKS, VIEW_MY_DECKS, LEADERBOARDS, MOTIVATION = range(7)
 
 PORT = int(os.environ.get('PORT', 5000))
 # Enable logging
@@ -12,18 +14,19 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 TOKEN = '1908824393:AAE3SZKfsySMCu-PZQNqtuiy7Xm4GXKEHsM'
 
-given_keyboard = [['CREATE Deck', 'VIEW deck 👀'],
-                  ['ADD Deck ➕', 'DELETE deck ⛔'],
-                  ['PRACTICE 💪', 'TEST ✍'],
-                  ['COMPETE']]
+reply_keyboard = [['Create Deck', 'Play Deck'],
+                  ['View All Decks', 'View My Decks'],
+                  ['Leaderboards', 'Motivate Me!']]
 
-markup = ReplyKeyboardMarkup(given_keyboard)
+markup = ReplyKeyboardMarkup(reply_keyboard)
 
 # Define a few command handlers. These usually take the two arguments update and
 # context. Error handlers also receive the raised TelegramError object in error.
 def start(update, context):
     """Send a message when the command /start is issued."""
-    update.message.reply_text('Hi!')
+    start_message = "Welcome to LifeHack Bot! \n\nNeed help? Click /help to see all available commands and what they do."
+    update.message.reply_text(start_message, reply_markup =  markup)
+    return CHOOSING
 
 def help(update, context):
     """Send a message when the command /help is issued."""
@@ -33,9 +36,51 @@ def echo(update, context):
     """Echo the user message."""
     update.message.reply_text(update.message.text)
 
+def create_deck_message(update, context):
+    update.message.reply_text("Want to create a new deck? Please give your new deck a name. \n\nTo cancel, type /cancel.")
+    return CREATE_DECK
+    
+def create_deck(update, context):
+    user_input = update.message.text
+    if (user_input == "/cancel"):
+        cancel(update, context)
+        return CHOOSING
+    else:
+        update.message.reply_text(user_input) # echo -> Si Ting TODO
+    return CHOOSING
+
+def play_deck_message(update, context):
+    update.message.reply_text("Enter deck token to play!. \n\nTo cancel, type /cancel.")
+    return PLAY_DECK
+
+def play_deck(update, context):
+    user_input = update.message.text
+    if (user_input == "/cancel"):
+        cancel(update, context)
+        return CHOOSING
+    else:
+        update.message.reply_text(user_input) # echo -> Si Ting TODO
+    return CHOOSING
+
+def view_all_decks_message(update, context):
+    update.message.reply_text("Here are all available decks. Enter a deck token to play! \n\nTo cancel, type /cancel.")
+    return PLAY_DECK
+
+def view_my_decks_message(update, context):
+    update.message.reply_text("Drk what to do here @ST Enter token to view leaderboards? To play?")
+    return CHOOSING
+
+def cancel(update, context):
+    update.message.reply_text("Cancelled!", reply_markup=markup)
+    return CHOOSING
+
 def error(update, context):
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
+
+def done(update, context):
+    update.message.reply_text("Thanks for playing! Come back soon!")
+    return ConversationHandler.END
 
 def main():
     """Start the bot."""
@@ -48,18 +93,37 @@ def main():
     dp = updater.dispatcher
 
     # on different commands - answer in Telegram
-    dp.add_handler(CommandHandler("start", start))
+    # dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
 
     # on noncommand i.e message - echo the message on Telegram
-    dp.add_handler(MessageHandler(Filters.text, echo))
+    # dp.add_handler(MessageHandler(Filters.text, echo))
+
+    # handle button press
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', start)],
+        states={
+            CHOOSING: [
+                MessageHandler(Filters.regex('Create Deck'), create_deck_message),
+                MessageHandler(Filters.regex('Play Deck'), play_deck_message),
+                MessageHandler(Filters.regex('View All Decks'), view_all_decks_message),
+                MessageHandler(Filters.regex('View My Decks'), view_my_decks_message)
+          
+            ],
+            CREATE_DECK: [MessageHandler(Filters.text, create_deck)],
+            PLAY_DECK: [MessageHandler(Filters.text, play_deck)]
+        },
+        fallbacks=[CommandHandler('done', done)]
+    )
+
+    dp.add_handler(conv_handler)
 
     # log all errors
     dp.add_error_handler(error)
     updater.start_polling()
 
     # Start the Bot
-   # updater.start_webhook(listen="0.0.0.0",
+    # updater.start_webhook(listen="0.0.0.0",
     #                      port=int(PORT),
     #                      url_path=TOKEN)
 
