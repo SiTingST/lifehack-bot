@@ -1,4 +1,5 @@
 import logging
+import requests, json
 import os
 import random
 import psycopg2
@@ -126,6 +127,27 @@ def view_my_decks_message(update, context):
     update.message.reply_text("Drk what to do here @ST Enter token to view leaderboards? To play?")
     return CHOOSING
 
+def motivate(update, context):
+    # image
+    # f = r"https://dog.ceo/api/breeds/image/random"
+    f = r"https://random.dog/woof.json"
+    page = requests.get(f)
+    data = json.loads(page.text)
+
+    # message
+    arr = ["keep up the good work!", "you got this!", "you're doing great!", "you can do it!"]
+    rand = random.randint(0,3)
+    file = open("motivational_quotes.txt")
+    lines = file.readlines()
+    rand_quote = random.randint(0, 17)
+    message = lines[rand_quote]
+
+    update.message.reply_text('{}, '.format(update.message.from_user.first_name) + str(arr[rand]))
+    update.message.reply_text(message)
+
+    update.message.reply_photo(data["url"])
+    return CHOOSING
+
 def cancel(update, context):
     update.message.reply_text("Cancelled!", reply_markup=markup)
     return CHOOSING
@@ -152,7 +174,8 @@ def main():
                 MessageHandler(Filters.regex('Create Deck'), create_deck_message),
                 MessageHandler(Filters.regex('Play Deck'), play_deck_message),
                 MessageHandler(Filters.regex('View All Decks'), view_all_decks_message),
-                MessageHandler(Filters.regex('View My Decks'), view_my_decks_message)
+                MessageHandler(Filters.regex('View My Decks'), view_my_decks_message),
+                MessageHandler(Filters.regex('Motivate Me!'), motivate)
 
             ],
             CREATE_DECK: [MessageHandler(Filters.text, create_deck)],
