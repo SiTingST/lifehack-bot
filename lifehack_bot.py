@@ -62,8 +62,9 @@ def help(update, context):
 
 
 def create_deck_message(update, context):
-    update.message.reply_text(
-        "Want to create a new deck? Please give your new deck a name. \n\nTo cancel, type /cancel.")
+    message = "Want to create a new deck? Please give your new deck a name. \n\n"
+    message += "To cancel, type /cancel. Once you are done adding your questions and answers, type /submit."
+    update.message.reply_text(message)
     return CREATE_DECK
 
 
