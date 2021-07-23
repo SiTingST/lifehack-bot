@@ -47,7 +47,16 @@ def start(update, context):
 
 def help(update, context):
     """Send a message when the command /help is issued."""
-    update.message.reply_text('Help!')
+
+    helpMessage = "✨ Commands:\n\n"
+    helpMessage += "/start - start using me! 🧸\n\n"
+    helpMessage += "Create Deck - create a new deck! ➕ \n"
+    helpMessage += "Play deck - let's start learning 📖\n"
+    helpMessage += "View All Decks - let's take a peek at everyone's decks 👀 \n"
+    helpMessage += "View My Deck - view your own deck 📔\n"
+    helpMessage += "Leaderboards - check our how everybody is faring! 🏆 \n"
+    helpMessage += "Motivate me - feeling down or unmotivated? Click me to feel better! 💪🏻 \n"
+    update.message.reply_text(helpMessage, reply_markup=markup)
 
 def echo(update, context):
     """Echo the user message."""
