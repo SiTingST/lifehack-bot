@@ -113,7 +113,7 @@ def create_questions(update, context):
                 connection = database_connection()
                 cursor = connection.cursor()
                 questions_data = (
-                    context.chat_data["questions"], context.chat_data["answer"], context.chat_data["deck_token"])
+                    context.chat_data["question"], context.chat_data["answer"], context.chat_data["deck_token"])
                 insert_query = """INSERT INTO questions (question, answer, deck_token) VALUES (%s, %s, %s) """
                 cursor.execute(insert_query, questions_data)
                 connection.commit()
@@ -131,7 +131,7 @@ def create_questions(update, context):
 
 def create_answers(update, context):
     user_input = update.message.text
-    context.chat_data["questions"] = user_input
+    context.chat_data["question"] = user_input
     update.message.reply_text("Please enter your answers.")
     if user_input == "/submit":
         update.message.reply_text("Submitted!")
@@ -157,7 +157,7 @@ def check_if_token_is_valid(given_deck_token):
 
 def play_deck_message(update, context):
     update.message.reply_text("Enter deck token to play! \n\nTo cancel, type /cancel.")
-    context.chat_data["counter"] = 0
+    context.chat_data["counter"] = 0 # initialize counter
 
     return PLAY_DECK
 
@@ -178,6 +178,7 @@ def select_questions_and_answer_from_deck(deck_token):
 
 def play_deck(update, context):
     deck_token = update.message.text
+    context.chat_data["curr_deck_token"] = deck_token
     if deck_token == "/cancel":
         cancel(update, context)
         return CHOOSING
@@ -191,13 +192,11 @@ def play_deck(update, context):
             context.chat_data["num_of_qn"] = len(context.chat_data["questions_and_ans"])
 
             # first question
-            context.chat_data["questions"] = questions_and_answer[context.chat_data["counter"]][0]
-
+            context.chat_data["question"] = questions_and_answer[context.chat_data["counter"]][0]
             # first answer
             context.chat_data["answer"] = questions_and_answer[context.chat_data["counter"]][1]
-            context.chat_data["counter"] = context.chat_data["counter"] + 1
 
-        update.message.reply_text(context.chat_data["questions"])
+        update.message.reply_text(context.chat_data["question"])
 
         update.message.reply_text("Please enter your answer.")
         return WAITING_FOR_USER_ANS
@@ -206,28 +205,40 @@ def play_deck(update, context):
 def give_user_question(update, context):
     if context.chat_data["counter"] == context.chat_data["num_of_qn"]:
         update.message.reply_text("That was the end of the quiz!")
+        return CHOOSING
     else:
-        update.message.reply_text(context.chat_data["questions"])
+        deck_token = context.chat_data["curr_deck_token"]
+        questions_and_answer = select_questions_and_answer_from_deck(deck_token)
+        context.chat_data["question"] = questions_and_answer[context.chat_data["counter"]][0]
+        context.chat_data["answer"] = questions_and_answer[context.chat_data["counter"]][1]
+        update.message.reply_text(context.chat_data["question"])
         update.message.reply_text("Please enter your answer.")
 
     return WAITING_FOR_USER_ANS
 
-
+# called upon WAITING_FOR_USER_ANS state
 def validate_user_answer(update, context):
     user_answer = update.message.text
+    if user_answer == "/cancel":
+        cancel(update, context)
+        return CHOOSING
     if user_answer == context.chat_data["answer"]:
         update.message.reply_text("Good Job! That's the correct answer!! To cancel, type /cancel.")
     else:
         update.message.reply_text("Good Try! But the correct answer is " + context.chat_data["answer"] +
-                                  "  To cancel, type /cancel.")
-    reply_keyboard = [['Yes', 'No']]
-    update.message.reply_text("Proceed to add questions to your new deck?",
-                              reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-    return GIVE_USER_QUESTION
+                                  ".  To cancel, type /cancel.")
+    # reply_keyboard = [['Yes', 'No']]
+    # update.message.reply_text("Proceed to add questions to your new deck?",
+    #                           reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+    
+    context.chat_data["counter"] = context.chat_data["counter"] + 1 # Pull next question and answer
+    give_user_question(update, context)
+    # return GIVE_USER_QUESTION
 
 
 def view_all_decks_message(update, context):
-    bot_message = "Here are the deck created by you." + "\n\n" + "| Deck Name | Token | \n\n"
+    bot_message = "Here are the decks created by you." + "\n\n" + "| Deck Name | Token | \n\n"
+    bot_message2 = "Enter a deck token to play! \n\nTo cancel, type /cancel."
 
     try:
         connection = database_connection()
@@ -242,6 +253,7 @@ def view_all_decks_message(update, context):
             count = count + 1
 
         update.message.reply_text(bot_message)
+        update.message.reply_text(bot_message2)
     except (Exception, psycopg2.Error) as e:  # as error :
         print(format(e))
 
@@ -249,7 +261,7 @@ def view_all_decks_message(update, context):
 
 
 def view_my_decks_message(update, context):
-    bot_message = "Here are the deck created by you." + "\n\n" + "| Deck Name | Token | \n\n"
+    bot_message = "Here are the decks created by you." + "\n\n" + "| Deck Name | Token | \n\n"
 
     try:
         connection = database_connection()
@@ -307,6 +319,20 @@ def done(update, context):
     update.message.reply_text("Thanks for playing! Come back soon!")
     return ConversationHandler.END
 
+def leaderboards(update, context):
+    leaderboard = "🏆 Leaderboard 🏆\n\n"
+    leaderboard += "1. 🥇 Lim Si Ting\n"
+    leaderboard += "2. 🥈 Michaelia Tan Tong\n"
+    leaderboard += "3. 🥉 Kimberly Ong\n"
+    leaderboard += "4. Yoong Yi En\n"
+    leaderboard += "5. John Lee \n"
+    leaderboard += "6. Alice Tan \n"
+    leaderboard += "7. Peter Tan \n"
+    leaderboard += "8. Samantha Wong \n"
+    leaderboard += "9. Lin Bei Fong \n"
+    leaderboard += "10. Toph Bei Fong \n"
+    update.message.reply_text(leaderboard)
+    return CHOOSING
 
 def main():
     updater = Updater(TOKEN, use_context=True)
@@ -323,6 +349,7 @@ def main():
                 MessageHandler(Filters.regex('Play Deck'), play_deck_message),
                 MessageHandler(Filters.regex('View All Decks'), view_all_decks_message),
                 MessageHandler(Filters.regex('View My Decks'), view_my_decks_message),
+                MessageHandler(Filters.regex('Leaderboards'), leaderboards),
                 MessageHandler(Filters.regex('Motivate Me!'), motivate)
 
             ],
@@ -330,8 +357,7 @@ def main():
             PLAY_DECK: [MessageHandler(Filters.text, play_deck)],
             CREATE_QUESTIONS: [MessageHandler(Filters.text, create_questions)],
             CREATE_ANSWERS: [MessageHandler(Filters.text, create_answers)],
-            WAITING_FOR_USER_ANS: [MessageHandler(Filters.text, validate_user_answer)],
-            GIVE_USER_QUESTION: [MessageHandler(Filters.text, play_deck)]
+            WAITING_FOR_USER_ANS: [MessageHandler(Filters.text, validate_user_answer)]
         },
         fallbacks=[CommandHandler('done', done)]
     )
@@ -340,14 +366,14 @@ def main():
 
     # log all errors
     dp.add_error_handler(error)
-    updater.start_polling()
+    # updater.start_polling()
 
-    # updater.start_webhook(listen="0.0.0.0",
-    #                      port=int(PORT),
-    #                     url_path=TOKEN)
-    # updater.bot.setWebhook('https://lifehackbots.herokuapp.com/' + TOKEN)
+    updater.start_webhook(listen="0.0.0.0",
+                         port=int(PORT),
+                        url_path=TOKEN)
+    updater.bot.setWebhook('https://lifehackbots.herokuapp.com/' + TOKEN)
 
-    # updater.idle()
+    updater.idle()
 
 
 if __name__ == '__main__':
