@@ -16,8 +16,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
-TOKEN = '1908824393:AAE3SZKfsySMCu-PZQNqtuiy7Xm4GXKEHsM'
-
+TOKEN = '1896611391:AAF7rV11u2oXQWH9ESpeCz4Vmtdv1pM_QLE'
 reply_keyboard = [['Create Deck', 'Play Deck'],
                   ['View All Decks', 'View My Decks'],
                   ['Leaderboards', 'Motivate Me!']]
@@ -60,6 +59,7 @@ def help(update, context):
     helpMessage += "Leaderboards - check our how everybody is faring! 🏆 \n"
     helpMessage += "Motivate me - feeling down or unmotivated? Click me to feel better! 💪🏻 \n"
     update.message.reply_text(helpMessage, reply_markup=markup)
+
 
 def create_deck_message(update, context):
     update.message.reply_text(
@@ -227,15 +227,49 @@ def validate_user_answer(update, context):
 
 
 def view_all_decks_message(update, context):
-    update.message.reply_text("Here are all available decks. Enter a deck token to play! \n\nTo cancel, type /cancel.")
-    
+    bot_message = "Here are the deck created by you." + "\n\n" + "| Deck Name | Token | \n\n"
+
+    try:
+        connection = database_connection()
+        cursor = connection.cursor()
+        select_query = """SELECT deck_name, deck_token FROM decks """
+        cursor.execute(select_query)
+        question_set = cursor.fetchall()
+
+        count = 1
+        for items in question_set:
+            bot_message = bot_message + (str(count) + ". " + items[0] + " | " + items[1]) + "\n\n"
+            count = count + 1
+
+        update.message.reply_text(bot_message)
+    except (Exception, psycopg2.Error) as e:  # as error :
+        print(format(e))
 
     return PLAY_DECK
 
 
 def view_my_decks_message(update, context):
-    update.message.reply_text("Drk what to do here @ST Enter token to view leaderboards? To play?")
+    bot_message = "Here are the deck created by you." + "\n\n" + "| Deck Name | Token | \n\n"
+
+    try:
+        connection = database_connection()
+        cursor = connection.cursor()
+        select_query = """SELECT deck_name, deck_token FROM decks where deck_owner =(%s) """
+        cursor.execute(select_query, (update.message.from_user.username,))
+        question_set = cursor.fetchall()
+
+        count = 1
+        for items in question_set:
+            bot_message = bot_message + (str(count) + ". " + items[0] + " | " + items[1]) + "\n\n"
+            count = count + 1
+
+        update.message.reply_text(bot_message)
+
+    except (Exception, psycopg2.Error) as e:  # as error :
+        print(format(e))
+
     return CHOOSING
+
 
 def motivate(update, context):
     # image
@@ -246,7 +280,7 @@ def motivate(update, context):
 
     # message
     arr = ["keep up the good work!", "you got this!", "you're doing great!", "you can do it!"]
-    rand = random.randint(0,3)
+    rand = random.randint(0, 3)
     file = open("motivational_quotes.txt")
     lines = file.readlines()
     rand_quote = random.randint(0, 17)
@@ -257,6 +291,7 @@ def motivate(update, context):
 
     update.message.reply_photo(data["url"])
     return CHOOSING
+
 
 def cancel(update, context):
     update.message.reply_text("Cancelled!", reply_markup=markup)
