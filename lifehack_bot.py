@@ -17,7 +17,6 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 TOKEN = '1908824393:AAE3SZKfsySMCu-PZQNqtuiy7Xm4GXKEHsM'
-
 reply_keyboard = [['Create Deck', 'Play Deck'],
                   ['View All Decks', 'View My Decks'],
                   ['Leaderboards', 'Motivate Me!']]
@@ -60,6 +59,7 @@ def help(update, context):
     helpMessage += "Leaderboards - check our how everybody is faring! 🏆 \n"
     helpMessage += "Motivate me - feeling down or unmotivated? Click me to feel better! 💪🏻 \n"
     update.message.reply_text(helpMessage, reply_markup=markup)
+
 
 def create_deck_message(update, context):
     update.message.reply_text(
@@ -144,12 +144,11 @@ def check_if_token_is_valid(given_deck_token):
         connection = database_connection()
         cursor = connection.cursor()
         print(given_deck_token)
-        select_query = """SELECT COUNT(*) FROM decks where deck_token =(%s) """
+        select_query = """SELECT COUNT(*) FROM questions where deck_token =(%s) """
         cursor.execute(select_query, (given_deck_token,))
         count = cursor.fetchone()
         # remove tuple from count
         count_int = str(count)[1:-2]
-        print("checked deck token validity!")
     except (Exception, psycopg2.Error) as e:  # as error :
         print(format(e))
 
@@ -157,7 +156,7 @@ def check_if_token_is_valid(given_deck_token):
 
 
 def play_deck_message(update, context):
-    update.message.reply_text("Enter deck token to play!. \n\nTo cancel, type /cancel.")
+    update.message.reply_text("Enter deck token to play! \n\nTo cancel, type /cancel.")
     context.chat_data["counter"] = 0 # initialize counter
 
     return PLAY_DECK
@@ -185,7 +184,8 @@ def play_deck(update, context):
         return CHOOSING
     else:
         if int(check_if_token_is_valid(deck_token)) == int(0):
-            update.message.reply_text("Please enter a valid deck token. \n\nTo cancel, type /cancel.")
+            update.message.reply_text("This deck token is either invalid or the deck is empty. Please try again. "
+                                      " \n\nTo cancel, type /cancel.")
         else:
             questions_and_answer = select_questions_and_answer_from_deck(deck_token)
             context.chat_data["questions_and_ans"] = select_questions_and_answer_from_deck(deck_token)
@@ -219,6 +219,9 @@ def give_user_question(update, context):
 # called upon WAITING_FOR_USER_ANS state
 def validate_user_answer(update, context):
     user_answer = update.message.text
+    if user_answer == "/cancel":
+        cancel(update, context)
+        return CHOOSING
     if user_answer == context.chat_data["answer"]:
         update.message.reply_text("Good Job! That's the correct answer!! To cancel, type /cancel.")
     else:
@@ -234,15 +237,51 @@ def validate_user_answer(update, context):
 
 
 def view_all_decks_message(update, context):
-    update.message.reply_text("Here are all available decks. Enter a deck token to play! \n\nTo cancel, type /cancel.")
-    
+    bot_message = "Here are the decks created by you." + "\n\n" + "| Deck Name | Token | \n\n"
+    bot_message2 = "Enter a deck token to play! \n\nTo cancel, type /cancel."
+
+    try:
+        connection = database_connection()
+        cursor = connection.cursor()
+        select_query = """SELECT deck_name, deck_token FROM decks """
+        cursor.execute(select_query)
+        question_set = cursor.fetchall()
+
+        count = 1
+        for items in question_set:
+            bot_message = bot_message + (str(count) + ". " + items[0] + " | " + items[1]) + "\n\n"
+            count = count + 1
+
+        update.message.reply_text(bot_message)
+        update.message.reply_text(bot_message2)
+    except (Exception, psycopg2.Error) as e:  # as error :
+        print(format(e))
 
     return PLAY_DECK
 
 
 def view_my_decks_message(update, context):
-    update.message.reply_text("Drk what to do here @ST Enter token to view leaderboards? To play?")
+    bot_message = "Here are the decks created by you." + "\n\n" + "| Deck Name | Token | \n\n"
+
+    try:
+        connection = database_connection()
+        cursor = connection.cursor()
+        select_query = """SELECT deck_name, deck_token FROM decks where deck_owner =(%s) """
+        cursor.execute(select_query, (update.message.from_user.username,))
+        question_set = cursor.fetchall()
+
+        count = 1
+        for items in question_set:
+            bot_message = bot_message + (str(count) + ". " + items[0] + " | " + items[1]) + "\n\n"
+            count = count + 1
+
+        update.message.reply_text(bot_message)
+
+    except (Exception, psycopg2.Error) as e:  # as error :
+        print(format(e))
+
     return CHOOSING
+
 
 def motivate(update, context):
     # image
@@ -253,7 +292,7 @@ def motivate(update, context):
 
     # message
     arr = ["keep up the good work!", "you got this!", "you're doing great!", "you can do it!"]
-    rand = random.randint(0,3)
+    rand = random.randint(0, 3)
     file = open("motivational_quotes.txt")
     lines = file.readlines()
     rand_quote = random.randint(0, 17)
@@ -264,6 +303,7 @@ def motivate(update, context):
 
     update.message.reply_photo(data["url"])
     return CHOOSING
+
 
 def cancel(update, context):
     update.message.reply_text("Cancelled!", reply_markup=markup)
@@ -279,8 +319,20 @@ def done(update, context):
     update.message.reply_text("Thanks for playing! Come back soon!")
     return ConversationHandler.END
 
-def dummy(update, context):
-    print("hello world")
+def leaderboards(update, context):
+    leaderboard = "🏆 Leaderboard 🏆\n\n"
+    leaderboard += "1. 🥇 Lim Si Ting\n"
+    leaderboard += "2. 🥈 Michaelia Tan Tong\n"
+    leaderboard += "3. 🥉 Kimberly Ong\n"
+    leaderboard += "4. Yoong Yi En\n"
+    leaderboard += "5. John Lee \n"
+    leaderboard += "6. Alice Tan \n"
+    leaderboard += "7. Peter Tan \n"
+    leaderboard += "8. Samantha Wong \n"
+    leaderboard += "9. Lin Bei Fong \n"
+    leaderboard += "10. Toph Bei Fong \n"
+    update.message.reply_text(leaderboard)
+    return CHOOSING
 
 def main():
     updater = Updater(TOKEN, use_context=True)
@@ -297,6 +349,7 @@ def main():
                 MessageHandler(Filters.regex('Play Deck'), play_deck_message),
                 MessageHandler(Filters.regex('View All Decks'), view_all_decks_message),
                 MessageHandler(Filters.regex('View My Decks'), view_my_decks_message),
+                MessageHandler(Filters.regex('Leaderboards'), leaderboards),
                 MessageHandler(Filters.regex('Motivate Me!'), motivate)
 
             ],
@@ -304,8 +357,7 @@ def main():
             PLAY_DECK: [MessageHandler(Filters.text, play_deck)],
             CREATE_QUESTIONS: [MessageHandler(Filters.text, create_questions)],
             CREATE_ANSWERS: [MessageHandler(Filters.text, create_answers)],
-            WAITING_FOR_USER_ANS: [MessageHandler(Filters.text, validate_user_answer)],
-            GIVE_USER_QUESTION: [MessageHandler(Filters.text, dummy)]
+            WAITING_FOR_USER_ANS: [MessageHandler(Filters.text, validate_user_answer)]
         },
         fallbacks=[CommandHandler('done', done)]
     )
@@ -314,14 +366,14 @@ def main():
 
     # log all errors
     dp.add_error_handler(error)
-    updater.start_polling()
+    # updater.start_polling()
 
-    # updater.start_webhook(listen="0.0.0.0",
-    #                      port=int(PORT),
-    #                     url_path=TOKEN)
-    # updater.bot.setWebhook('https://lifehackbots.herokuapp.com/' + TOKEN)
+    updater.start_webhook(listen="0.0.0.0",
+                         port=int(PORT),
+                        url_path=TOKEN)
+    updater.bot.setWebhook('https://lifehackbots.herokuapp.com/' + TOKEN)
 
-    # updater.idle()
+    updater.idle()
 
 
 if __name__ == '__main__':
