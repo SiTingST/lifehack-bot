@@ -76,21 +76,20 @@ def create_deck(update, context):
             cursor = connection.cursor()
             deck_data = (user_input, "hi all", deck_token)
             insert_query = """INSERT INTO decks (deck_name, deck_owner, deck_token) VALUES (%s, %s, %s) """
-            cursor.execute(insert_query, deck_data, generate_random_string())
+            cursor.execute(insert_query, deck_data)
             connection.commit()
-            print("user inserted successfully into users table")
-        except (Exception, psycopg2.Error):  # as error :
-            print("User already registered")
+            print("Deck created successfully!")
+        except (Exception, psycopg2.Error) as e:  # as error :
+            print(format(e))
         finally:
             if (connection):
                 cursor.close()
                 connection.close()
-                # print("PostgreSQL connection is closed")
-
     return CREATE_QUESTIONS
 
 
 def create_questions(update, context):
+    print("qn")
     if update.message.text == "/submit":
         cancel(update, context)
         return CHOOSING
@@ -169,7 +168,6 @@ def main():
             PLAY_DECK: [MessageHandler(Filters.text, play_deck)],
             CREATE_QUESTIONS: [MessageHandler(Filters.text, create_questions)],
             CREATE_ANSWERS: [MessageHandler(Filters.text, create_answers)]
-
         },
         fallbacks=[CommandHandler('done', done)]
     )
