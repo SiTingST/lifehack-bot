@@ -54,7 +54,7 @@ def main():
                           port=int(PORT),
                           url_path=TOKEN)
 
-    updater.bot.setWebhook('https://calm-lowlands-45102.herokuapp.com/' + TOKEN)
+    updater.bot.setWebhook('https://lifehackbots.herokuapp.com/' + TOKEN)
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
