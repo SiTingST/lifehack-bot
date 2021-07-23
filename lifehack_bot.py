@@ -42,7 +42,7 @@ def database_connection():
 # context. Error handlers also receive the raised TelegramError object in error.
 def start(update, context):
     """Send a message when the command /start is issued."""
-    start_message = "Welcome to LifeHack Bot! \n\nNeed help? Click /help to see all available commands and what they do."
+    start_message = "Welcome to Pandamic_Learner Bot! \n\nNeed help? Click /help to see all available commands and what they do."
     update.message.reply_text(start_message, reply_markup=markup)
     return CHOOSING
 
