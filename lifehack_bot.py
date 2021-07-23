@@ -28,7 +28,6 @@ def generate_random_string():
     deck_token = ''.join(random.choice('0123456789ABCDEF') for i in range(16))
     return deck_token
 
-
 def database_connection():
     con = psycopg2.connect(user="wphtrnjifgtphq",
                            password="c870974f40f5ca10d7f7abcb6cbc4b89137bc612a516a917784990da74c3bd95",
@@ -36,7 +35,6 @@ def database_connection():
                            port="5432",
                            database="dac876p6jjg42g")
     return con
-
 
 # Define a few command handlers. These usually take the two arguments update and
 # context. Error handlers also receive the raised TelegramError object in error.
@@ -51,17 +49,14 @@ def help(update, context):
     """Send a message when the command /help is issued."""
     update.message.reply_text('Help!')
 
-
 def echo(update, context):
     """Echo the user message."""
     update.message.reply_text(update.message.text)
-
 
 def create_deck_message(update, context):
     update.message.reply_text(
         "Want to create a new deck? Please give your new deck a name. \n\nTo cancel, type /cancel.")
     return CREATE_DECK
-
 
 def create_deck(update, context):
     user_input = update.message.text
@@ -90,7 +85,6 @@ def create_deck(update, context):
                                 reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
     return CREATE_QUESTIONS
 
-
 def create_questions(update, context):
     user_input = update.message.text
     if user_input == "No":
@@ -103,7 +97,6 @@ def create_questions(update, context):
         update.message.reply_text("Please enter your question.")
         return CREATE_ANSWERS
 
-
 def create_answers(update, context):
     user_input = update.message.text
     update.message.reply_text("Please enter your answers.")
@@ -112,11 +105,9 @@ def create_answers(update, context):
         return CHOOSING
     return CREATE_QUESTIONS
 
-
 def play_deck_message(update, context):
     update.message.reply_text("Enter deck token to play!. \n\nTo cancel, type /cancel.")
     return PLAY_DECK
-
 
 def play_deck(update, context):
     user_input = update.message.text
@@ -127,31 +118,25 @@ def play_deck(update, context):
         update.message.reply_text(user_input)  # echo -> Si Ting TODO
     return CHOOSING
 
-
 def view_all_decks_message(update, context):
     update.message.reply_text("Here are all available decks. Enter a deck token to play! \n\nTo cancel, type /cancel.")
     return PLAY_DECK
-
 
 def view_my_decks_message(update, context):
     update.message.reply_text("Drk what to do here @ST Enter token to view leaderboards? To play?")
     return CHOOSING
 
-
 def cancel(update, context):
     update.message.reply_text("Cancelled!", reply_markup=markup)
     return CHOOSING
-
 
 def error(update, context):
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
 
-
 def done(update, context):
     update.message.reply_text("Thanks for playing! Come back soon!")
     return ConversationHandler.END
-
 
 def main():
     updater = Updater(TOKEN, use_context=True)
