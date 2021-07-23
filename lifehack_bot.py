@@ -1,5 +1,7 @@
 import logging
 import os
+
+import psycopg2
 from telegram import ReplyKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
@@ -19,6 +21,15 @@ reply_keyboard = [['Create Deck', 'Play Deck'],
                   ['Leaderboards', 'Motivate Me!']]
 
 markup = ReplyKeyboardMarkup(reply_keyboard)
+
+
+def database_connection():
+    con = psycopg2.connect(user="wphtrnjifgtphq",
+                                  password="c870974f40f5ca10d7f7abcb6cbc4b89137bc612a516a917784990da74c3bd95",
+                                  host="ec2-35-174-56-18.compute-1.amazonaws.com",
+                                  port="5432",
+                                  database="dac876p6jjg42g")
+    return con
 
 # Define a few command handlers. These usually take the two arguments update and
 # context. Error handlers also receive the raised TelegramError object in error.
@@ -83,21 +94,11 @@ def done(update, context):
     return ConversationHandler.END
 
 def main():
-    """Start the bot."""
-    # Create the Updater and pass it your bot's token.
-    # Make sure to set use_context=True to use the new context based callbacks
-    # Post version 12 this will no longer be necessary
+
     updater = Updater(TOKEN, use_context=True)
 
-    # Get the dispatcher to register handlers
     dp = updater.dispatcher
-
-    # on different commands - answer in Telegram
-    # dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
-
-    # on noncommand i.e message - echo the message on Telegram
-    # dp.add_handler(MessageHandler(Filters.text, echo))
 
     # handle button press
     conv_handler = ConversationHandler(
@@ -122,12 +123,10 @@ def main():
     dp.add_error_handler(error)
     updater.start_polling()
 
-    # Start the Bot
-    # updater.start_webhook(listen="0.0.0.0",
-    #                      port=int(PORT),
-    #                      url_path=TOKEN)
-
-    #updater.bot.setWebhook('https://lifehackbots.herokuapp.com/' + TOKEN)
+    updater.start_webhook(listen="0.0.0.0",
+                          port=int(PORT),
+                         url_path=TOKEN)
+    updater.bot.setWebhook('https://lifehackbots.herokuapp.com/' + TOKEN)
 
     updater.idle()
 
