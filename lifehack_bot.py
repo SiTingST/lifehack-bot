@@ -74,38 +74,43 @@ def create_deck(update, context):
         try:
             connection = database_connection()
             cursor = connection.cursor()
-            deck_data = (user_input, "hi all", deck_token)
+            deck_data = (user_input, update.message.from_user.username, deck_token)
             insert_query = """INSERT INTO decks (deck_name, deck_owner, deck_token) VALUES (%s, %s, %s) """
-            cursor.execute(insert_query, deck_data, generate_random_string())
+            cursor.execute(insert_query, deck_data)
             connection.commit()
-            print("user inserted successfully into users table")
-        except (Exception, psycopg2.Error):  # as error :
-            print("User already registered")
-        finally:
-            if (connection):
-                cursor.close()
-                connection.close()
-                # print("PostgreSQL connection is closed")
+            print("Deck created successfully!")
+        except (Exception, psycopg2.Error) as e:  # as error :
+            print(format(e))
 
+    cursor.close()
+    connection.close()
+
+    reply_keyboard = [['Yes', 'No']]
+    update.message.reply_text("Proceed to add questions to your new deck?",
+                                reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
     return CREATE_QUESTIONS
 
 
 def create_questions(update, context):
-    if update.message.text == "/submit":
+    user_input = update.message.text
+    if user_input == "No":
         cancel(update, context)
         return CHOOSING
+    if user_input == "/submit":
+        update.message.reply_text("Submitted!")
+        return CHOOSING
     else:
-        update.message.reply_text("Please enter your question")
+        update.message.reply_text("Please enter your question.")
         return CREATE_ANSWERS
 
 
 def create_answers(update, context):
-    if update.message.text == "/submit":
-        cancel(update, context)
+    user_input = update.message.text
+    update.message.reply_text("Please enter your answers.")
+    if user_input == "/submit":
+        update.message.reply_text("Submitted!")
         return CHOOSING
-    else:
-        update.message.reply_text("Please enter your answers")
-        return CREATE_QUESTIONS
+    return CREATE_QUESTIONS
 
 
 def play_deck_message(update, context):
@@ -169,7 +174,6 @@ def main():
             PLAY_DECK: [MessageHandler(Filters.text, play_deck)],
             CREATE_QUESTIONS: [MessageHandler(Filters.text, create_questions)],
             CREATE_ANSWERS: [MessageHandler(Filters.text, create_answers)]
-
         },
         fallbacks=[CommandHandler('done', done)]
     )
