@@ -16,7 +16,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
-TOKEN = '1896611391:AAF7rV11u2oXQWH9ESpeCz4Vmtdv1pM_QLE'
+TOKEN = '1908824393:AAE3SZKfsySMCu-PZQNqtuiy7Xm4GXKEHsM'
 reply_keyboard = [['Create Deck', 'Play Deck'],
                   ['View All Decks', 'View My Decks'],
                   ['Leaderboards', 'Motivate Me!']]
@@ -144,12 +144,11 @@ def check_if_token_is_valid(given_deck_token):
         connection = database_connection()
         cursor = connection.cursor()
         print(given_deck_token)
-        select_query = """SELECT COUNT(*) FROM decks where deck_token =(%s) """
+        select_query = """SELECT COUNT(*) FROM questions where deck_token =(%s) """
         cursor.execute(select_query, (given_deck_token,))
         count = cursor.fetchone()
         # remove tuple from count
         count_int = str(count)[1:-2]
-        print("checked deck token validity!")
     except (Exception, psycopg2.Error) as e:  # as error :
         print(format(e))
 
@@ -157,7 +156,7 @@ def check_if_token_is_valid(given_deck_token):
 
 
 def play_deck_message(update, context):
-    update.message.reply_text("Enter deck token to play!. \n\nTo cancel, type /cancel.")
+    update.message.reply_text("Enter deck token to play! \n\nTo cancel, type /cancel.")
     context.chat_data["counter"] = 0
 
     return PLAY_DECK
@@ -184,7 +183,8 @@ def play_deck(update, context):
         return CHOOSING
     else:
         if int(check_if_token_is_valid(deck_token)) == int(0):
-            update.message.reply_text("Please enter a valid deck token. \n\nTo cancel, type /cancel.")
+            update.message.reply_text("This deck token is either invalid or the deck is empty. Please try again. "
+                                      " \n\nTo cancel, type /cancel.")
         else:
             questions_and_answer = select_questions_and_answer_from_deck(deck_token)
             context.chat_data["questions_and_ans"] = select_questions_and_answer_from_deck(deck_token)
